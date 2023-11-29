@@ -1,4 +1,8 @@
 # Spotify_R
 #who will complete which algorithim 
-#Jacques- XGB
-#Amel- GLM
+#Amel- XGB
+#Liza- GLM
+#Sam - Neural Network 
+#Ivory - KNN 
+
+
