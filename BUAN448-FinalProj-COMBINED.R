@@ -245,6 +245,9 @@ print(importance_plot)
   songs.df.latin <- subset(songs.nn, songs.nn$playlist_genre=="latin")
   songs.df.rnb <- subset(songs.nn, songs.nn$playlist_genre=="r&b")
   songs.df.edm <- subset(songs.nn, songs.nn$playlist_genre=="edm")
+  
+  accuracy.nn <- c()
+  accuracy.nn.mae <- c()
 
 "
 Neural networks were created by each playlist genre, then all the songs as a whole.
@@ -275,7 +278,8 @@ determined to be the best balance of accuracy and performance time
     valid.df_pop$prediction <- valid.prediction_pop$net.result
     round(cor(valid.df_pop$track_popularity,valid.df_pop$prediction),digits=2)*100
     
-    accuracy(valid.df_pop$track_popularity,valid.df_pop$prediction)
+    accuracy.nn.mae[1] <-  accuracy(valid.df_pop$track_popularity,valid.df_pop$prediction)[3]
+    accuracy.nn[1] <-  accuracy(valid.df_pop$track_popularity,valid.df_pop$prediction)[5]
   
   
   
@@ -301,6 +305,10 @@ determined to be the best balance of accuracy and performance time
   
   accuracy(valid.df_rap$track_popularity,valid.df_rap$prediction)
   
+  accuracy.nn.mae[2] <-   accuracy(valid.df_rap$track_popularity,valid.df_rap$prediction)[3]
+  accuracy.nn[2] <-   accuracy(valid.df_rap$track_popularity,valid.df_rap$prediction)[5]
+
+  
   
   ##EDM MODEL
   
@@ -321,8 +329,10 @@ determined to be the best balance of accuracy and performance time
     valid.df_edm$prediction <- valid.prediction_edm$net.result
     round(cor(valid.df_edm$track_popularity,valid.df_edm$prediction),digits=2)*100
     
-    accuracy(valid.df_edm$track_popularity,valid.df_edm$prediction)
-  
+    accuracy.nn.mae[3] <- accuracy(valid.df_edm$track_popularity,valid.df_edm$prediction)[3]
+    accuracy.nn[3] <- accuracy(valid.df_edm$track_popularity,valid.df_edm$prediction)[5]
+    
+    
   ##R&B
   
     train_size_rnb <- round(nrow(songs.df.rnb)*.60)
@@ -342,8 +352,9 @@ determined to be the best balance of accuracy and performance time
     valid.df_rnb$prediction <- valid.prediction_rnb$net.result
     round(cor(valid.df_rnb$track_popularity,valid.df_rnb$prediction),digits=2)*100
     
-    accuracy(valid.df_rnb$track_popularity,valid.df_rnb$prediction)
-  
+    accuracy.nn.mae[4] <- accuracy(valid.df_rnb$track_popularity,valid.df_rnb$prediction)[3]
+    accuracy.nn[4] <- accuracy(valid.df_rnb$track_popularity,valid.df_rnb$prediction)[5]
+    
   
   
   
@@ -368,11 +379,11 @@ determined to be the best balance of accuracy and performance time
   valid.df_rock$prediction <- valid.prediction_rock$net.result
   round(cor(valid.df_rock$track_popularity,valid.df_rock$prediction),digits=2)*100
   
-  accuracy(valid.df_rock$track_popularity,valid.df_rock$prediction)
+  accuracy.nn.mae[5] <- accuracy(valid.df_rock$track_popularity,valid.df_rock$prediction)[3]
+  accuracy.nn[5] <- accuracy(valid.df_rock$track_popularity,valid.df_rock$prediction)[5]
   
   
   ##LATIN
-  
   train_size_latin <- round(nrow(songs.df.latin)*.60)
   train_index_latin <- sample(nrow(songs.df.latin),train_size_latin)
   
@@ -384,13 +395,16 @@ determined to be the best balance of accuracy and performance time
                                         speechiness+acousticness+instrumentalness+ 
                                         liveness+valence+tempo+duration_ms, 
                                       data=train.df_latin,
-                                      hidden=c(2))
+                                      hidden=c(2,1))
   
   valid.prediction_latin <- compute(popularity_model_latin, valid.df_latin)
   valid.df_latin$prediction <- valid.prediction_latin$net.result
   round(cor(valid.df_latin$track_popularity,valid.df_latin$prediction),digits=2)*100
   
-  accuracy(valid.df_latin$track_popularity,valid.df_latin$prediction)
+  accuracy.nn.mae[6] <- accuracy(valid.df_latin$track_popularity,valid.df_latin$prediction)[3]
+  accuracy.nn[6] <- accuracy(valid.df_latin$track_popularity,valid.df_latin$prediction)[5]
+  
+  
   
   
   ##ALL SONGS
@@ -406,7 +420,7 @@ determined to be the best balance of accuracy and performance time
   We must eliminate some variables in order to decrease processing times
   
   Instrumentalness captured in speechiness
-  Liveness deemed unconsequential
+  Liveness deemed inconsequential
   Loudness captured in energy
   
   "
@@ -422,13 +436,22 @@ determined to be the best balance of accuracy and performance time
   
   
   
-  valid.prediction <- compute(popularity_model, valid.df)
+  valid.prediction <- compute(popularity_model.nn, valid.df_nn)
   valid.df_nn$prediction <- valid.prediction$net.result
   
-  accuracy(valid.df_nn$track_popularity,valid.df_nn$prediction)
+  accuracy.nn.mae[7] <- accuracy(valid.df_nn$track_popularity,valid.df_nn$prediction)[3]
+  accuracy.nn[7] <- accuracy(valid.df_nn$track_popularity,valid.df_nn$prediction)[5]
+  
+  accuracy.nn
+  
+  final.accuracy.nn <- data.frame(Playlist_Genre=c("Pop","Rap","EDM","R&B","Rock","Latin","All"),
+                        MAE = round(accuracy.nn.mae,digits=2),
+                        MAPE = round(accuracy.nn,digits=2)
+    
+    
+  )
 
-
-
+##NN Sensitivity Analysis
 "
 Sensitivity analysis conducted to determine variable importance
 Base case is all inputs set to .5
@@ -461,7 +484,7 @@ impact on track variability
   
   new_set.nn.valence <- data.frame(danceability=.5, energy=.5,
                                    speechiness=.5, acousticness=.5, 
-                                   valence=sensitivity_factor,tempo=.5,duration_ms=.5)
+                                   valence=.5+sensitivity_factor,tempo=.5,duration_ms=.5)
   
   
   new_set.nn.tempo <- data.frame(danceability=.5, energy=.5,
@@ -531,9 +554,8 @@ impact on track variability
                                                 prediction_nn.tempo.neg$net.result,prediction_nn.duration.neg$net.result))
   Base_Popularity.nn <- sensitivity.nn$Populairty_Pos[1]
   
-  
-  sensitivity.nn$Impact_Pos <- round(sensitivity.nn$Populairty_Pos-Base_Popularity.nn,digits=3)
-  sensitivity.nn$Impact_Neg <- round(sensitivity.nn$Populairty_Neg-Base_Popularity.nn,digits=3)
-  View(sensitivity.nn)
-  
-
+  sensitivity.nn.change <- data.frame(Input=c("Base", "Danceability","Energy","Speechiness", 
+                                              "Acousticness", "Valence", "Tempo", "Duration"))
+  sensitivity.nn.change$Impact_Neg <- round(sensitivity.nn$Populairty_Neg-Base_Popularity.nn,digits=3)
+  sensitivity.nn.change$Impact_Pos <- round(sensitivity.nn$Populairty_Pos-Base_Popularity.nn,digits=3)
+  View(sensitivity.nn.change)
