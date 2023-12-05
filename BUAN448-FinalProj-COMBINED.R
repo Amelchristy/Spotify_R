@@ -9,6 +9,7 @@ library(ellipsis)
 library(FNN)
 library(fastDummies)
 
+set.seed(12345)
 
 normalize <- function(x) {
   return((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
@@ -51,9 +52,9 @@ accuracy_df.knn <- data.frame(k=1:15, Accuracy = numeric(15))
 
 for(k in 1:16){
   songs.pred.knn <- knn(train=train.df.knn,
-                    test = valid.df.knn,
-                    cl=train.df.knn$is_popular,
-                    k=k)
+                        test = valid.df.knn,
+                        cl=train.df.knn$is_popular,
+                        k=k)
   accuracy <- mean(songs.pred.knn == valid.df.knn$is_popular)
   accuracy_df.knn$Accuracy[k - 1] <- accuracy
 }
@@ -67,9 +68,9 @@ print(best)
 
 #analysis
 prediction.knn <- knn(train=train.df.knn,
-                  test = valid.df.knn,
-                  cl=train.df.knn$is_popular,
-                  k=2)
+                      test = valid.df.knn,
+                      cl=train.df.knn$is_popular,
+                      k=2)
 conf_matrix.knn <- table(prediction.knn,valid.df.knn$is_popular)
 
 confusionMatrix(conf_matrix.knn)
@@ -231,297 +232,308 @@ print(importance_plot)
 ##########################################
 #NEURAL NETWORK
 ##########################################
-songs.nn <- read.csv("spotify_songs.csv")
-
-columns_non_normal.nn <- c("loudness", "tempo", "duration_ms", "track_popularity")
-songs.nn[columns_non_normal.nn] <- as.data.frame(lapply(songs.nn[columns_non_normal.nn], 
-                                                     normalize))
-
-songs.df.pop <- subset(songs.nn, songs.nn$playlist_genre=="pop")
-songs.df.rap <- subset(songs.nn, songs.nn$playlist_genre=="rap")
-songs.df.rock <- subset(songs.nn, songs.nn$playlist_genre=="rock")
-songs.df.latin <- subset(songs.nn, songs.nn$playlist_genre=="latin")
-songs.df.rnb <- subset(songs.nn, songs.nn$playlist_genre=="r&b")
-songs.df.edm <- subset(songs.nn, songs.nn$playlist_genre=="edm")
-
-'
-songs.df$playlist_pop <- ifelse(songs.df$playlist_genre=="pop", 1, 0)
-songs.df$playlist_rap <- ifelse(songs.df$playlist_genre=="rap", 1, 0)
-songs.df$playlist_rock <- ifelse(songs.df$playlist_genre=="rock", 1, 0)
-songs.df$playlist_latin <- ifelse(songs.df$playlist_genre=="latin", 1, 0)
-songs.df$playlist_rnb <- ifelse(songs.df$playlist_genre=="r&b", 1, 0)
-songs.df$playlist_edm <- ifelse(songs.df$playlist_genre=="edm", 1, 0)
-songs.df <- subset(songs.df, select = -playlist_genre)
-'
-
-
-
-
-
-
-##POP SONGS
-
-
-
-train_size_pop <- round(nrow(songs.df.pop)*.60)
-train_index_pop <- sample(nrow(songs.df.pop),train_size_pop)
-
-train.df_pop <- songs.df.pop[train_index_pop, ]
-valid.df_pop <- songs.df.pop[-train_index_pop, ]
-
-popularity_model_pop <- neuralnet(track_popularity~
-                                    danceability+energy+loudness+
-                                    speechiness+acousticness+instrumentalness+ liveness+valence+
-                                    tempo+duration_ms, 
-                                  data=train.df_pop,
-                                  hidden=c(2,1))
-plot(popularity_model_pop)
-
-valid.prediction_pop <- compute(popularity_model_pop, valid.df_pop)
-valid.df_pop$prediction <- valid.prediction_pop$net.result
-round(cor(valid.df_pop$track_popularity,valid.df_pop$prediction),digits=2)*100
-
-accuracy(valid.df_pop$track_popularity,valid.df_pop$prediction)
-
-
-
-
-##RAP MODEL
-
-train_size_rap <- round(nrow(songs.df.rap)*.60)
-train_index_rap <- sample(nrow(songs.df.rap),train_size_rap)
-
-train.df_rap <- songs.df.rap[train_index_rap, ]
-valid.df_rap <- songs.df.rap[-train_index_rap, ]
-
-popularity_model_rap <- neuralnet(track_popularity~
-                                    danceability+energy+loudness+
-                                    speechiness+acousticness+instrumentalness+ liveness+valence+
-                                    tempo+duration_ms, 
-                                  data=train.df_rap,
-                                  hidden=c(2,1))
-
-valid.prediction_rap <- compute(popularity_model_rap, valid.df_rap)
-valid.df_rap$prediction <- valid.prediction_rap$net.result
-round(cor(valid.df_rap$track_popularity,valid.df_rap$prediction),digits=2)*100
-
-accuracy(valid.df_rap$track_popularity,valid.df_rap$prediction)
-
-
-##EDM MODEL
-
-train_size_edm <- round(nrow(songs.df.edm)*.60)
-train_index_edm <- sample(nrow(songs.df.edm),train_size_edm)
-
-train.df_edm <- songs.df.edm[train_index_edm, ]
-valid.df_edm <- songs.df.edm[-train_index_edm, ]
-
-popularity_model_edm <- neuralnet(track_popularity~
-                                    danceability+energy+loudness+
-                                    speechiness+acousticness+instrumentalness+ liveness+valence+
-                                    tempo+duration_ms, 
-                                  data=train.df_edm,
-                                  hidden=c(2,1))
-
-valid.prediction_edm <- compute(popularity_model_edm, valid.df_edm)
-valid.df_edm$prediction <- valid.prediction_edm$net.result
-round(cor(valid.df_edm$track_popularity,valid.df_edm$prediction),digits=2)*100
-
-accuracy(valid.df_edm$track_popularity,valid.df_edm$prediction)
-
-##R&B
-
-train_size_rnb <- round(nrow(songs.df.rnb)*.60)
-train_index_rnb <- sample(nrow(songs.df.rnb),train_size_rnb)
-
-train.df_rnb <- songs.df.rnb[train_index_rnb, ]
-valid.df_rnb <- songs.df.rnb[-train_index_rnb, ]
-
-popularity_model_rnb <- neuralnet(track_popularity~
-                                    danceability+energy+loudness+
-                                    speechiness+acousticness+instrumentalness+ 
-                                    liveness+valence+tempo+duration_ms, 
-                                  data=train.df_rnb,
-                                  hidden=c(2,1))
-
-valid.prediction_rnb <- compute(popularity_model_rnb, valid.df_rnb)
-valid.df_rnb$prediction <- valid.prediction_rnb$net.result
-round(cor(valid.df_rnb$track_popularity,valid.df_rnb$prediction),digits=2)*100
-
-accuracy(valid.df_rnb$track_popularity,valid.df_rnb$prediction)
-
-
-
-
-
-#ROCK
-
-
-train_size_rock <- round(nrow(songs.df.rock)*.60)
-train_index_rock <- sample(nrow(songs.df.rock),train_size_rock)
-
-train.df_rock <- songs.df.rock[train_index_rock, ]
-valid.df_rock <- songs.df.rock[-train_index_rock, ]
-
-popularity_model_rock <- neuralnet(track_popularity~
-                                     danceability+energy+loudness+
-                                     speechiness+acousticness+instrumentalness+ 
-                                     liveness+valence+tempo+duration_ms, 
-                                   data=train.df_rock,
-                                   hidden=c(2,1))
-
-valid.prediction_rock <- compute(popularity_model_rock, valid.df_rock)
-valid.df_rock$prediction <- valid.prediction_rock$net.result
-round(cor(valid.df_rock$track_popularity,valid.df_rock$prediction),digits=2)*100
-
-accuracy(valid.df_rock$track_popularity,valid.df_rock$prediction)
-
-
-##LATIN
-
-train_size_latin <- round(nrow(songs.df.latin)*.60)
-train_index_latin <- sample(nrow(songs.df.latin),train_size_latin)
-
-train.df_latin <- songs.df.latin[train_index_latin, ]
-valid.df_latin <- songs.df.latin[-train_index_latin, ]
-
-popularity_model_latin <- neuralnet(track_popularity~
-                                      danceability+energy+loudness+
-                                      speechiness+acousticness+instrumentalness+ 
-                                      liveness+valence+tempo+duration_ms, 
-                                    data=train.df_latin,
-                                    hidden=c(2))
-
-valid.prediction_latin <- compute(popularity_model_latin, valid.df_latin)
-valid.df_latin$prediction <- valid.prediction_latin$net.result
-round(cor(valid.df_latin$track_popularity,valid.df_latin$prediction),digits=2)*100
-
-accuracy(valid.df_latin$track_popularity,valid.df_latin$prediction)
-
-
-##ALL SONGS
-
-
-train_size_nn <- round(32833*.60)
-train_index_nn <- sample(32833,train_size_nn)
-
-train.df_nn <- songs.nn[train_index_nn, ]
-valid.df_nn <- songs.nn[-train_index_nn, ]
-
-"Instrumentalness captured in speechiness
-Liveness deemed unconsequential
-Loudness captured in energy
+  songs.nn <- read.csv("spotify_songs.csv")
+  
+  columns_non_normal.nn <- c("loudness", "tempo", "duration_ms", "track_popularity")
+  songs.nn[columns_non_normal.nn] <- as.data.frame(lapply(songs.nn[columns_non_normal.nn], 
+                                                          normalize))
+  
+  #Creating sub data frames by playlist genre category
+  songs.df.pop <- subset(songs.nn, songs.nn$playlist_genre=="pop")
+  songs.df.rap <- subset(songs.nn, songs.nn$playlist_genre=="rap")
+  songs.df.rock <- subset(songs.nn, songs.nn$playlist_genre=="rock")
+  songs.df.latin <- subset(songs.nn, songs.nn$playlist_genre=="latin")
+  songs.df.rnb <- subset(songs.nn, songs.nn$playlist_genre=="r&b")
+  songs.df.edm <- subset(songs.nn, songs.nn$playlist_genre=="edm")
 
 "
+Neural networks were created by each playlist genre, then all the songs as a whole.
+Processing time was too long to 
 
-popularity_model.nn <- neuralnet(track_popularity~
-                                danceability+energy+
-                                speechiness+acousticness+ 
-                                valence+tempo+duration_ms,  
-                              data=train.df_nn,
-                              hidden=c(2,1))
+Two hidden levels, one with two nodes and the second with one node. This was 
+determined to be the best balance of accuracy and performance time
+"
+  
+  ##POP SONGS
+  
+  
+    train_size_pop <- round(nrow(songs.df.pop)*.60)
+    train_index_pop <- sample(nrow(songs.df.pop),train_size_pop)
+    
+    train.df_pop <- songs.df.pop[train_index_pop, ]
+    valid.df_pop <- songs.df.pop[-train_index_pop, ]
+    
+    popularity_model_pop <- neuralnet(track_popularity~
+                                        danceability+energy+loudness+
+                                        speechiness+acousticness+instrumentalness+ liveness+valence+
+                                        tempo+duration_ms, 
+                                      data=train.df_pop,
+                                      hidden=c(2,1))
+    plot(popularity_model_pop)
+    
+    valid.prediction_pop <- compute(popularity_model_pop, valid.df_pop)
+    valid.df_pop$prediction <- valid.prediction_pop$net.result
+    round(cor(valid.df_pop$track_popularity,valid.df_pop$prediction),digits=2)*100
+    
+    accuracy(valid.df_pop$track_popularity,valid.df_pop$prediction)
+  
+  
+  
+  
+  ##RAP MODEL
+  
+    train_size_rap <- round(nrow(songs.df.rap)*.60)
+    train_index_rap <- sample(nrow(songs.df.rap),train_size_rap)
+    
+    train.df_rap <- songs.df.rap[train_index_rap, ]
+    valid.df_rap <- songs.df.rap[-train_index_rap, ]
+    
+    popularity_model_rap <- neuralnet(track_popularity~
+                                        danceability+energy+loudness+
+                                        speechiness+acousticness+instrumentalness+ liveness+valence+
+                                        tempo+duration_ms, 
+                                      data=train.df_rap,
+                                      hidden=c(2,1))
+    
+    valid.prediction_rap <- compute(popularity_model_rap, valid.df_rap)
+    valid.df_rap$prediction <- valid.prediction_rap$net.result
+    round(cor(valid.df_rap$track_popularity,valid.df_rap$prediction),digits=2)*100
+  
+  accuracy(valid.df_rap$track_popularity,valid.df_rap$prediction)
+  
+  
+  ##EDM MODEL
+  
+    train_size_edm <- round(nrow(songs.df.edm)*.60)
+    train_index_edm <- sample(nrow(songs.df.edm),train_size_edm)
+    
+    train.df_edm <- songs.df.edm[train_index_edm, ]
+    valid.df_edm <- songs.df.edm[-train_index_edm, ]
+    
+    popularity_model_edm <- neuralnet(track_popularity~
+                                        danceability+energy+loudness+
+                                        speechiness+acousticness+instrumentalness+ liveness+valence+
+                                        tempo+duration_ms, 
+                                      data=train.df_edm,
+                                      hidden=c(2,1))
+    
+    valid.prediction_edm <- compute(popularity_model_edm, valid.df_edm)
+    valid.df_edm$prediction <- valid.prediction_edm$net.result
+    round(cor(valid.df_edm$track_popularity,valid.df_edm$prediction),digits=2)*100
+    
+    accuracy(valid.df_edm$track_popularity,valid.df_edm$prediction)
+  
+  ##R&B
+  
+    train_size_rnb <- round(nrow(songs.df.rnb)*.60)
+    train_index_rnb <- sample(nrow(songs.df.rnb),train_size_rnb)
+    
+    train.df_rnb <- songs.df.rnb[train_index_rnb, ]
+    valid.df_rnb <- songs.df.rnb[-train_index_rnb, ]
+    
+    popularity_model_rnb <- neuralnet(track_popularity~
+                                        danceability+energy+loudness+
+                                        speechiness+acousticness+instrumentalness+ 
+                                        liveness+valence+tempo+duration_ms, 
+                                      data=train.df_rnb,
+                                      hidden=c(2,1))
+    
+    valid.prediction_rnb <- compute(popularity_model_rnb, valid.df_rnb)
+    valid.df_rnb$prediction <- valid.prediction_rnb$net.result
+    round(cor(valid.df_rnb$track_popularity,valid.df_rnb$prediction),digits=2)*100
+    
+    accuracy(valid.df_rnb$track_popularity,valid.df_rnb$prediction)
+  
+  
+  
+  
+  
+  #ROCK
+  
+  
+  train_size_rock <- round(nrow(songs.df.rock)*.60)
+  train_index_rock <- sample(nrow(songs.df.rock),train_size_rock)
+  
+  train.df_rock <- songs.df.rock[train_index_rock, ]
+  valid.df_rock <- songs.df.rock[-train_index_rock, ]
+  
+  popularity_model_rock <- neuralnet(track_popularity~
+                                       danceability+energy+loudness+
+                                       speechiness+acousticness+instrumentalness+ 
+                                       liveness+valence+tempo+duration_ms, 
+                                     data=train.df_rock,
+                                     hidden=c(2,1))
+  
+  valid.prediction_rock <- compute(popularity_model_rock, valid.df_rock)
+  valid.df_rock$prediction <- valid.prediction_rock$net.result
+  round(cor(valid.df_rock$track_popularity,valid.df_rock$prediction),digits=2)*100
+  
+  accuracy(valid.df_rock$track_popularity,valid.df_rock$prediction)
+  
+  
+  ##LATIN
+  
+  train_size_latin <- round(nrow(songs.df.latin)*.60)
+  train_index_latin <- sample(nrow(songs.df.latin),train_size_latin)
+  
+  train.df_latin <- songs.df.latin[train_index_latin, ]
+  valid.df_latin <- songs.df.latin[-train_index_latin, ]
+  
+  popularity_model_latin <- neuralnet(track_popularity~
+                                        danceability+energy+loudness+
+                                        speechiness+acousticness+instrumentalness+ 
+                                        liveness+valence+tempo+duration_ms, 
+                                      data=train.df_latin,
+                                      hidden=c(2))
+  
+  valid.prediction_latin <- compute(popularity_model_latin, valid.df_latin)
+  valid.df_latin$prediction <- valid.prediction_latin$net.result
+  round(cor(valid.df_latin$track_popularity,valid.df_latin$prediction),digits=2)*100
+  
+  accuracy(valid.df_latin$track_popularity,valid.df_latin$prediction)
+  
+  
+  ##ALL SONGS
 
-plot(popularity_model.nn)
 
-valid.prediction <- compute(popularity_model, valid.df)
-valid.df_nn$prediction <- valid.prediction$net.result
-
-accuracy(valid.df_nn$track_popularity,valid.df_nn$prediction)
-sensitivity_factor = .5
-
-new_set.nn <- data.frame(danceability=0, energy=0,
-                  speechiness=0, acousticness=0, 
-                  valence=0,tempo=0,duration_ms=0)
-
-new_set.nn.danceability <- data.frame(danceability=sensitivity_factor, energy=0,
-                         speechiness=0, acousticness=0, 
-                         valence=0,tempo=0,duration_ms=0)
-
-new_set.nn.energy <- data.frame(danceability=0, energy=sensitivity_factor,
-                         speechiness=0, acousticness=0, 
-                         valence=0,tempo=0,duration_ms=0)
-
-
-new_set.nn.speechiness <- data.frame(danceability=0, energy=0,
-                         speechiness=sensitivity_factor, acousticness=0, 
-                         valence=0,tempo=0,duration_ms=0)
-
-new_set.nn.acousticness <- data.frame(danceability=0, energy=0,
-                                      speechiness=0, acousticness=sensitivity_factor, 
-                                      valence=0,tempo=0,duration_ms=0)
-
-new_set.nn.valence <- data.frame(danceability=0, energy=0,
-                         speechiness=0, acousticness=0, 
-                         valence=sensitivity_factor,tempo=0,duration_ms=0)
-
-
-new_set.nn.tempo <- data.frame(danceability=0, energy=0,
-                         speechiness=0, acousticness=0, 
-                         valence=0,tempo=sensitivity_factor,duration_ms=0)
-
-new_set.nn.duration <- data.frame(danceability=0, energy=0,
-                             speechiness=0, acousticness=0, 
-                               valence=0,tempo=0,duration_ms=sensitivity_factor)
-
-new_set.nn.danceability.neg <- data.frame(danceability=-sensitivity_factor, energy=0,
-                                      speechiness=0, acousticness=0, 
-                                      valence=0,tempo=0,duration_ms=0)
-
-new_set.nn.energy.neg <- data.frame(danceability=0, energy=-sensitivity_factor,
-                                speechiness=0, acousticness=0, 
-                                valence=0,tempo=0,duration_ms=0)
+  train_size_nn <- round(32833*.60)
+  train_index_nn <- sample(32833,train_size_nn)
+  
+  train.df_nn <- songs.nn[train_index_nn, ]
+  valid.df_nn <- songs.nn[-train_index_nn, ]
+  
+  "
+  We must eliminate some variables in order to decrease processing times
+  
+  Instrumentalness captured in speechiness
+  Liveness deemed unconsequential
+  Loudness captured in energy
+  
+  "
+  
+  popularity_model.nn <- neuralnet(track_popularity~
+                                     danceability+energy+
+                                     speechiness+acousticness+ 
+                                     valence+tempo+duration_ms,  
+                                   data=train.df_nn,
+                                   hidden=c(2,1))
+  
+  plot(popularity_model.nn)
+  
+  
+  
+  valid.prediction <- compute(popularity_model, valid.df)
+  valid.df_nn$prediction <- valid.prediction$net.result
+  
+  accuracy(valid.df_nn$track_popularity,valid.df_nn$prediction)
 
 
-new_set.nn.speechiness.neg <- data.frame(danceability=0, energy=0,
-                                     speechiness=-sensitivity_factor, acousticness=0, 
-                                     valence=0,tempo=0,duration_ms=0)
 
-new_set.nn.acousticness.neg <- data.frame(danceability=0, energy=0,
-                                      speechiness=0, acousticness=-sensitivity_factor, 
-                                      valence=0,tempo=0,duration_ms=0)
+"
+Sensitivity analysis conducted to determine variable importance
+Base case is all inputs set to .5
+Each variable is increased and decreased by the sensitivity factor to determine
+impact on track variability
 
-new_set.nn.valence.neg <- data.frame(danceability=0, energy=0,
-                                 speechiness=0, acousticness=0, 
-                                 valence=-sensitivity_factor,tempo=0,duration_ms=0)
-
-
-new_set.nn.tempo.neg <- data.frame(danceability=0, energy=0,
-                               speechiness=0, acousticness=0, 
-                               valence=0,tempo=-sensitivity_factor,duration_ms=0)
-
-new_set.nn.duration.neg <- data.frame(danceability=0, energy=0,
-                                  speechiness=0, acousticness=0, 
-                                  valence=0,tempo=0,duration_ms=-sensitivity_factor)
-
-prediction_nn.base <- compute(popularity_model.nn, new_set.nn)
-prediction_nn.danceability <- compute(popularity_model.nn, new_set.nn.danceability)
-prediction_nn.energy <- compute(popularity_model.nn, new_set.nn.energy)
-prediction_nn.speechiness <- compute(popularity_model.nn, new_set.nn.speechiness)
-prediction_nn.acousticness <- compute(popularity_model.nn, new_set.nn.acousticness)
-prediction_nn.valence <- compute(popularity_model.nn, new_set.nn.valence)
-prediction_nn.tempo <- compute(popularity_model.nn, new_set.nn.tempo)
-prediction_nn.duration <- compute(popularity_model.nn, new_set.nn.duration)
-
-prediction_nn.danceability.neg <- compute(popularity_model.nn, new_set.nn.danceability.neg)
-prediction_nn.energy.neg <- compute(popularity_model.nn, new_set.nn.energy.neg)
-prediction_nn.speechiness.neg <- compute(popularity_model.nn, new_set.nn.speechiness.neg)
-prediction_nn.acousticness.neg <- compute(popularity_model.nn, new_set.nn.acousticness.neg)
-prediction_nn.valence.neg <- compute(popularity_model.nn, new_set.nn.valence.neg)
-prediction_nn.tempo.neg <- compute(popularity_model.nn, new_set.nn.tempo.neg)
-prediction_nn.duration.neg <- compute(popularity_model.nn, new_set.nn.duration.neg)
-
-sensitivity.nn <- data.frame(Input=c("Base", "Danceability","Energy","Speechiness", 
-                                      "Acousticness", "Valence", "Tempo", "Duration"),
-                                     Populairty_Pos = c(prediction_nn.base$net.result,prediction_nn.danceability$net.result,
-                               prediction_nn.energy$net.result, prediction_nn.speechiness$net.result,
-                               prediction_nn.acousticness$net.result, prediction_nn.valence$net.result,
-                               prediction_nn.tempo$net.result,prediction_nn.duration$net.result),
-                             Populairty_Neg=c(prediction_nn.base$net.result,prediction_nn.danceability.neg$net.result,
-                                              prediction_nn.energy.neg$net.result, prediction_nn.speechiness.neg$net.result,
-                                              prediction_nn.acousticness.neg$net.result, prediction_nn.valence.neg$net.result,
-                                              prediction_nn.tempo.neg$net.result,prediction_nn.duration.neg$net.result))
-sensitivity.nn$Impact_Pos <- round(sensitivity.nn$Populairty_Pos-.5542566,digits=3)
-sensitivity.nn$Impact_Neg <- round(sensitivity.nn$Populairty_Neg-.5542566,digits=3)
-View(sensitivity.nn)
-
+"
+  sensitivity_factor = .25
+  
+  new_set.nn <- data.frame(danceability=.5, energy=.5,
+                           speechiness=.5, acousticness=.5, 
+                           valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.danceability <- data.frame(danceability=.5+sensitivity_factor, energy=.5,
+                                        speechiness=.5, acousticness=.5, 
+                                        valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.energy <- data.frame(danceability=.5, energy=.5+sensitivity_factor,
+                                  speechiness=.5, acousticness=.5, 
+                                  valence=.5,tempo=.5,duration_ms=.5)
+  
+  
+  new_set.nn.speechiness <- data.frame(danceability=.5, energy=.5,
+                                       speechiness=.5+sensitivity_factor, acousticness=.5, 
+                                       valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.acousticness <- data.frame(danceability=.5, energy=.5,
+                                        speechiness=.5, acousticness=.5+sensitivity_factor, 
+                                        valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.valence <- data.frame(danceability=.5, energy=.5,
+                                   speechiness=.5, acousticness=.5, 
+                                   valence=sensitivity_factor,tempo=.5,duration_ms=.5)
+  
+  
+  new_set.nn.tempo <- data.frame(danceability=.5, energy=.5,
+                                 speechiness=.5, acousticness=.5, 
+                                 valence=.5,tempo=.5+sensitivity_factor,duration_ms=.5)
+  
+  new_set.nn.duration <- data.frame(danceability=.5, energy=.5,
+                                    speechiness=.5, acousticness=.5, 
+                                    valence=.5,tempo=.5,duration_ms=.5+sensitivity_factor)
+  
+  new_set.nn.danceability.neg <- data.frame(danceability=.5-sensitivity_factor, energy=.5,
+                                            speechiness=.5, acousticness=.5, 
+                                            valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.energy.neg <- data.frame(danceability=.5, energy=.5-sensitivity_factor,
+                                      speechiness=.5, acousticness=.5, 
+                                      valence=.5,tempo=.5,duration_ms=.5)
+  
+  
+  new_set.nn.speechiness.neg <- data.frame(danceability=.5, energy=.5,
+                                           speechiness=.5-sensitivity_factor, acousticness=.5, 
+                                           valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.acousticness.neg <- data.frame(danceability=.5, energy=.5,
+                                            speechiness=.5, acousticness=.5-sensitivity_factor, 
+                                            valence=.5,tempo=.5,duration_ms=.5)
+  
+  new_set.nn.valence.neg <- data.frame(danceability=.5, energy=.5,
+                                       speechiness=.5, acousticness=.5, 
+                                       valence=.5-sensitivity_factor,tempo=.5,duration_ms=.5)
+  
+  
+  new_set.nn.tempo.neg <- data.frame(danceability=.5, energy=.5,
+                                     speechiness=.5, acousticness=.5, 
+                                     valence=.5,tempo=.5-sensitivity_factor,duration_ms=.5)
+  
+  new_set.nn.duration.neg <- data.frame(danceability=.5, energy=.5,
+                                        speechiness=.5, acousticness=.5, 
+                                        valence=.5,tempo=.5,duration_ms=.5-sensitivity_factor)
+  
+  prediction_nn.base <- compute(popularity_model.nn, new_set.nn)
+  prediction_nn.danceability <- compute(popularity_model.nn, new_set.nn.danceability)
+  prediction_nn.energy <- compute(popularity_model.nn, new_set.nn.energy)
+  prediction_nn.speechiness <- compute(popularity_model.nn, new_set.nn.speechiness)
+  prediction_nn.acousticness <- compute(popularity_model.nn, new_set.nn.acousticness)
+  prediction_nn.valence <- compute(popularity_model.nn, new_set.nn.valence)
+  prediction_nn.tempo <- compute(popularity_model.nn, new_set.nn.tempo)
+  prediction_nn.duration <- compute(popularity_model.nn, new_set.nn.duration)
+  
+  prediction_nn.danceability.neg <- compute(popularity_model.nn, new_set.nn.danceability.neg)
+  prediction_nn.energy.neg <- compute(popularity_model.nn, new_set.nn.energy.neg)
+  prediction_nn.speechiness.neg <- compute(popularity_model.nn, new_set.nn.speechiness.neg)
+  prediction_nn.acousticness.neg <- compute(popularity_model.nn, new_set.nn.acousticness.neg)
+  prediction_nn.valence.neg <- compute(popularity_model.nn, new_set.nn.valence.neg)
+  prediction_nn.tempo.neg <- compute(popularity_model.nn, new_set.nn.tempo.neg)
+  prediction_nn.duration.neg <- compute(popularity_model.nn, new_set.nn.duration.neg)
+  
+  sensitivity.nn <- data.frame(Input=c("Base", "Danceability","Energy","Speechiness", 
+                                       "Acousticness", "Valence", "Tempo", "Duration"),
+                               Populairty_Pos = c(prediction_nn.base$net.result,prediction_nn.danceability$net.result,
+                                                  prediction_nn.energy$net.result, prediction_nn.speechiness$net.result,
+                                                  prediction_nn.acousticness$net.result, prediction_nn.valence$net.result,
+                                                  prediction_nn.tempo$net.result,prediction_nn.duration$net.result),
+                               Populairty_Neg=c(prediction_nn.base$net.result,prediction_nn.danceability.neg$net.result,
+                                                prediction_nn.energy.neg$net.result, prediction_nn.speechiness.neg$net.result,
+                                                prediction_nn.acousticness.neg$net.result, prediction_nn.valence.neg$net.result,
+                                                prediction_nn.tempo.neg$net.result,prediction_nn.duration.neg$net.result))
+  Base_Popularity.nn <- sensitivity.nn$Populairty_Pos[1]
+  
+  
+  sensitivity.nn$Impact_Pos <- round(sensitivity.nn$Populairty_Pos-Base_Popularity.nn,digits=3)
+  sensitivity.nn$Impact_Neg <- round(sensitivity.nn$Populairty_Neg-Base_Popularity.nn,digits=3)
+  View(sensitivity.nn)
+  
 
