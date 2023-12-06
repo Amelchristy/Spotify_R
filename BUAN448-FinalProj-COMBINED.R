@@ -20,62 +20,58 @@ normalize <- function(x) {
 ##KNN
 ############################################################
 
-songs.knn <- read.csv('spotify_songs.csv')
+getwd()
+setwd('~/BUAN448 PreditiveR')
+library(caret)
+library(ellipsis)
+library(FNN)
 
-head(songs.knn)
-View(songs.knn)
+songs <- read.csv('spotify_songs.csv')
 
 #step1 - categorical -> dummy
-d_genre <- dummyVars('~playlist_genre',songs.knn)
-songs_genre <- predict(d_genre,songs.knn)
+d_genre <- dummyVars('~playlist_genre',songs)
+songs_genre <- predict(d_genre,songs)
 
-d_subgenre <- dummyVars('~playlist_subgenre',songs.knn)
-songs_subgenre <- predict(d_subgenre,songs.knn)
+d_subgenre <- dummyVars('~playlist_subgenre',songs)
+songs_subgenre <- predict(d_subgenre,songs)
 
-songs.knn <- cbind(songs.knn,songs_genre,songs_subgenre)
-songs.knn$is_popular <- ifelse(songs.knn$track_popularity>70,1,0)
+songs <- cbind(songs,songs_genre,songs_subgenre)
+songs$is_popular <- ifelse(songs$track_popularity>70,1,0)
 
-songs.knn <- songs.knn[,-c(1,2,3,4,5,6,7,8,9,10,11,14)]
+songs <- songs[,-c(1,2,3,4,5,6,7,8,9,10,11,14)]
 
 #step2 - scale the features
-norm.values <- preProcess(songs.knn[ ,c(3,10,11)], method=c("center", "scale"))
-songs.knn[,c(3,10,11)] <- predict(norm.values,songs.knn[,c(3,10,11)])
+norm.values <- preProcess(songs[ ,c(3,10,11)], method='range')
+songs[,c(3,10,11)] <- predict(norm.values,songs[,c(3,10,11)])
 
 #split the data
 set.seed(12345)
-train.index.knn <- sample(c(1:dim(songs.knn)[1]), dim(songs.knn)[1]*0.6)
-train.df.knn <- songs.knn[train.index.knn, ]
-valid.df.knn <- songs.knn[-train.index.knn, ]
+train.index <- sample(c(1:dim(songs)[1]), dim(songs)[1]*0.6)
+train.df <- songs[train.index, ]
+valid.df <- songs[-train.index, ]
 
 #build the model
-accuracy_df.knn <- data.frame(k=1:15, Accuracy = numeric(15))
+accuracy_df <- data.frame(k=1:15, Accuracy = numeric(15))
 
 for(k in 1:16){
-  songs.pred.knn <- knn(train=train.df.knn,
-                        test = valid.df.knn,
-                        cl=train.df.knn$is_popular,
-                        k=k)
-  accuracy <- mean(songs.pred.knn == valid.df.knn$is_popular)
-  accuracy_df.knn$Accuracy[k - 1] <- accuracy
+  songs.pred <- knn(train=train.df,
+                   test = valid.df,
+                   cl=train.df$is_popular,
+                   k=k)
+  accuracy <- mean(songs.pred == valid.df$is_popular)
+  accuracy_df$Accuracy[k - 1] <- accuracy
 }
 
-print(accuracy_df.knn)
+print(accuracy_df)
+#high accuracy - consider the model is overfitting
 
+#using cross-validation
+songs$is_popular <- as.factor(songs$is_popular)
+train_control <- trainControl(method = "cv", number = 10)
+knn_fit <- train(is_popular ~ ., data = songs, method = "knn", trControl = train_control)
+print(knn_fit)
 
-#what's the best k?  K=2
-best <- which.max(accuracy_df.knn$Accuracy)
-print(best)
-
-#analysis
-prediction.knn <- knn(train=train.df.knn,
-                      test = valid.df.knn,
-                      cl=train.df.knn$is_popular,
-                      k=2)
-conf_matrix.knn <- table(prediction.knn,valid.df.knn$is_popular)
-
-confusionMatrix(conf_matrix.knn)
-
-
+#the final value used for the model was k = 9
 
 #########################################
 ##LOGISTIC REGRESSION
