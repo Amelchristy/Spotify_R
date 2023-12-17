@@ -234,7 +234,7 @@ params <- list(
   eval_metric = "logloss"
 )
 
-# 10-fold cross-validation
+# K-fold cross-validation
 cv_model <- xgb.cv(params = params, data = xgb_train, nrounds = 1000, nfold = 8, verbose = 0, early_stopping_rounds = 10)
 
 # Train the model using optimal number of rounds
