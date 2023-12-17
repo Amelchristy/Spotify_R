@@ -8,6 +8,7 @@ library(ggplot2)
 library(ellipsis)
 library(FNN)
 library(fastDummies)
+library(corrplot)
 
 set.seed(12345)
 
@@ -257,8 +258,6 @@ importance_plot <- xgb.plot.importance(importance_matrix)
 library(ggplot2)
 library(xgboost)
 
-# Assuming 'importance_matrix' is already created from your xgb model
-# importance_matrix <- xgb.importance(feature_names = colnames(train_x), model = xgb_model)
 
 # Convert importance_matrix to a data frame if it's not already
 importance_matrix_df <- as.data.frame(importance_matrix)
@@ -357,6 +356,16 @@ me_forward
 #0.003762642
 me_both
 #0.003762642
+
+#model3 lm linear 
+full_coef <- coef(full_model)
+full_df <- data.frame(feature = names(model3_coef), coefficient = model3_coef)
+ggplot(full_df, aes(x = reorder(feature, coefficient), y = coefficient)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Feature Importance in Linear Model, x = "Feature", y = "Coefficient")
+
+
 
 ##########################################
 #NEURAL NETWORK
