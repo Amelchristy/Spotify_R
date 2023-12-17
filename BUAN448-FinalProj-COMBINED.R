@@ -274,8 +274,89 @@ importance_plot <- ggplot(importance_matrix_df, aes(x = reorder(Feature, Gain), 
 # Display the plot
 print(importance_plot)
 
+##########################################
+LINEAR REGRESSION
+##########################################
+
+spotify_songs2 <- read.csv("spotify_songs.csv")
+
+# Extracting necessary columns
+features <- c("track_popularity", "playlist_genre", "playlist_subgenre", 
+              "danceability", "energy", "key", "loudness", "mode", 
+              "speechiness", "acousticness", "instrumentalness", 
+              "liveness", "valence", "tempo", "duration_ms")
+spotify_songs2 <- spotify_songs2[, features]
+
+# normalization function
+normalize <- function(x) {
+  return((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
+}
+
+norm_cols <- c("loudness", "tempo", "duration_ms", "track_popularity")
+spotify_songs2[norm_cols] <- lapply(spotify_songs2[norm_cols], normalize)
 
 
+set.seed(12345)
+
+# Splitting the data into training and validation sets
+train_index <- sample(1:nrow(spotify_songs2), 0.6 * nrow(spotify_songs2))
+train_data <- spotify_songs2[train_index, ]
+valid_data <- spotify_songs2[-train_index, ]
+
+# Building linear regression models 
+null_model <- lm(track_popularity ~ 1, data = train_data)
+full_model <- lm(track_popularity ~ ., data = train_data)
+
+# Backward 
+backward_model <- step(full_model, direction = "backward", scope = list(lower = null_model, upper = full_model))
+summary(backward_model)
+
+# Forward 
+forward_model <- step(null_model, direction = "forward", scope = list(lower = null_model, upper = full_model))
+summary(forward_model)
+
+# Both direction 
+both_model <- step(null_model, direction = "both", scope = list(lower = null_model, upper = full_model))
+summary(both_model)
+
+# Making predictions on the validation set
+backward_pred <- predict(backward_model, valid_data)
+forward_pred <- predict(forward_model, valid_data)
+both_pred <- predict(both_model, valid_data)
+
+# Calculating RMSE 
+rmse_backward <- sqrt(mean((valid_data$track_popularity - backward_pred)^2))
+rmse_forward <- sqrt(mean((valid_data$track_popularity - forward_pred)^2))
+rmse_both <- sqrt(mean((valid_data$track_popularity - both_pred)^2))
+rmse_backward
+#0.2296593
+rmse_both
+#0.2296593
+rmse_forward
+#0.2296593
+
+# Calculating MAE
+mae_backward <- mean(abs(valid_data$track_popularity - backward_pred))
+mae_forward <- mean(abs(valid_data$track_popularity - forward_pred))
+mae_both <- mean(abs(valid_data$track_popularity - both_pred))
+#Results 
+mae_backward
+#0.1904584
+mae_forward
+#0.1904584
+mae_both
+#0.1904584
+
+# Calculating ME
+me_backward <- mean(valid_data$track_popularity - backward_pred)
+me_forward <- mean(valid_data$track_popularity - forward_pred)
+me_both <- mean(valid_data$track_popularity - both_pred)
+me_backward
+#0.003762642
+me_forward
+#0.003762642
+me_both
+#0.003762642
 
 ##########################################
 #NEURAL NETWORK
