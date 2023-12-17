@@ -357,14 +357,15 @@ me_forward
 me_both
 #0.003762642
 
-#model3 lm linear 
+#linear visualization
 full_coef <- coef(full_model)
-full_df <- data.frame(feature = names(model3_coef), coefficient = model3_coef)
+full_df <- data.frame(feature = names(full_coef), coefficient = full_coef)
+
+# Plotting the feature importance
 ggplot(full_df, aes(x = reorder(feature, coefficient), y = coefficient)) +
   geom_col() +
   coord_flip() +
-  labs(title = "Feature Importance in Linear Model, x = "Feature", y = "Coefficient")
-
+  labs(title = "Feature Importance in Linear Model", x = "Feature", y = "Coefficient")
 
 
 ##########################################
