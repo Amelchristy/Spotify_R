@@ -97,7 +97,7 @@ songs.glm <- dummy_cols(songs.glm, select_columns = c("playlist_genre", "playlis
 
 # Create binary target variable and convert it to a factor
 # Modify the 'popular' column using ifelse
-songs.glm$popular <- ifelse(songs.glm$track_popularity > 80, 1, 0)
+songs.glm$popular <- ifelse(songs.glm$track_popularity > 70, 1, 0)
 
 # Remove the 'track_popularity' column
 songs.glm$track_popularity <- NULL
@@ -114,22 +114,74 @@ summary(train)
 # Option 1: Remove rows with NA
 train_no_na <- na.omit(train.glm)
 # Fit the initial GLM model with the cleaned data
-spotify_glm_no_na <- glm(popular ~ ., data = train_no_na, family = binomial())
+model1 <- glm(popular ~ danceability + energy + key + loudness + mode +
+                speechiness + acousticness + instrumentalness +
+                liveness + valence + tempo + duration_ms,
+              data = train_no_na, family = "binomial")
+summary(model1)
 
-# Forward stepwise regression
-forward <- step(glm(popular ~ 1, data = train_no_na, family = "binomial"),
-                scope = list(upper = spotify_glm_no_na),
-                direction = "forward", trace = TRUE)
+#predictions on the valid set
+test.glm$predictions <- ifelse(predict(model1, newdata = test.glm, type = "response") > 0.3, 1, 0)
 
-# Check the summary
-summary(forward)
+# Accuracy of the model
+accuracy<-mean(test.glm$predictions == test.glm$popular)
+accuracy
+# 0.8587635
+# Confusion matrix
+cmatrix_model <- table(test.glm$predictions,test.glm$popular)
+cmatrix_model
 
-#backward
 
-backward <- step(glm(popular ~ 1, data = train_no_na, family = "binomial"),
-                 direction = "backward", trace = TRUE)
+#MODEL2 use all features
+model2 <- glm(popular ~ ., data = train_no_na, family = "binomial")
 
-summary(backward)
+summary(model2)
+
+#predictions on the valid set
+test.glm$predictions <- ifelse(predict(model2, newdata = test.glm, type = "response") > 0.3, 1, 0)
+
+# Accuracy of the model
+accuracy2<-mean(test.glm$predictions == test.glm$popular)
+accuracy2
+#0.8442211
+# Confusion matrix
+cmatrix_model2 <- table(valid.data$predictions, valid.data$popular)
+cmatrix_model2
+#correlation Heatmap 
+install.packages("corrplot")
+library(corrplot)
+numerical_features <- spotify_songs[, c("danceability", "energy", "loudness", "speechiness", "acousticness", "instrumentalness", "liveness", "valence", "tempo", "duration_ms")]
+correlations <- cor(numerical_features)
+corrplot(correlations, method = "color", color='green')
+
+
+#popularity by genre
+ggplot(spotify_songs, aes(x = playlist_genre, fill = as.factor(popular))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = c("0" = "black", "1" = "green")) +
+  labs(title = "Popularity Distribution by Genre", x = "Genre", y = "Count", fill = "Popularity")
+
+
+#coefficient model 1 popular ~ danceability + energy + key + loudness + mode +speechiness + acousticness + instrumentalness +
+#liveness + valence + tempo + duration_ms,
+library(ggplot2)
+model1_coef <- coef(model1)
+model1_df <- data.frame(feature = names(model1_coef), coefficient = model1_coef)
+ggplot(model1_df, aes(x = reorder(feature, coefficient), y = coefficient)) +
+  geom_col(fill="green3") +
+  coord_flip() +
+  labs(title = "Feature Importance in Model 1", x = "Feature", y = "Coefficient")
+
+
+
+#model 2 
+model2_coef <- coef(model2)
+model2_df <- data.frame(feature = names(model2_coef), coefficient = model2_coef)
+ggplot(model2_df, aes(x = reorder(feature, coefficient), y = coefficient)) +
+  geom_col(fill="green4") +
+  coord_flip() +
+  labs(title = "Feature Importance in Model 2", x = "Feature", y = "Coefficient")
+
 
 
 ######################################
